@@ -32,7 +32,13 @@ function parseOFX(ofxContent) {
     }
     console.log(transactionData);
     let table_container = document.getElementById('ofx-table');
-    table_container.appendChild(createTable(transactionData,['ID','Tipo','Data','Valor','Descrição']));
+    if (!table_container.textContent.trim()) {
+        table_container.appendChild(createTable(transactionData,['ID','Tipo','Data','Valor','Descrição']));
+    }else{
+        if (confirm("Tem certeza de que deseja carregar outro OFX? O atual não será salvo")) {
+            table_container.appendChild(createTable(transactionData,['ID','Tipo','Data','Valor','Descrição']));
+        }
+    }
 }
 
 function createTable(data, headers_array = []) {
@@ -82,8 +88,6 @@ function createTable(data, headers_array = []) {
     table.classList.add("table");
     table.classList.add("table-bordered");
     table.classList.add("table-striped");
-
-    
 
     return table;
 }
