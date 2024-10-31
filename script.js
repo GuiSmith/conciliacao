@@ -3,6 +3,8 @@ var real = new Intl.NumberFormat('pt-BR', {
     currency: 'BRL',
 })
 
+var ofx_selected = false;
+
 function parseOFX(ofxContent) {
     // Remover cabeçalhos desnecessários, caso existam, para converter em XML válido
     const xmlContent = ofxContent.replace(/^[^<].*$/gm, '').trim();
@@ -32,18 +34,24 @@ function parseOFX(ofxContent) {
     }
     console.log(transactionData);
     let table_container = document.getElementById('ofx-table');
-    if (!table_container.textContent.trim()) {
-        table_container.appendChild(createTable(transactionData,['ID','Tipo','Data','Valor','Descrição']));
-    }else{
-        if (confirm("Tem certeza de que deseja carregar outro OFX? O atual não será salvo")) {
-            table_container.appendChild(createTable(transactionData,['ID','Tipo','Data','Valor','Descrição']));
-        }
+    let headers = ['ID', 'Tipo', 'Data', 'Valor', 'Descrição'];
+    //Checks if a file is already selected and confirms the overwrite operation with the user
+    let generate_table;
+    //Is there an ofx file selected?
+    if (ofx_selected) {
+        generate_table = confirm("Tem certeza de que deseja carregar outro OFX? O atual não será salvo");
+    } else {
+        generate_table = true;
+    }
+    if (generate_table) {
+        table_container.appendChild(createTable(transactionData, headers));
+        ofx_selected = true;
     }
 }
 
-function createTable(data, headers_array = []) {
-    // Check if data is valid and not empty
-    if (!data || data.length === 0) {
+function createTable(data_obj, headers_array = [], filters = true) {
+    // Check if data_obj is valid and not empty
+    if (!data_obj || data_obj.length === 0) {
         console.error("No data provided or empty array.");
         return;
     }
@@ -54,10 +62,10 @@ function createTable(data, headers_array = []) {
     const tbody = document.createElement('tbody');
 
     //Keys
-    const keys = Object.keys(data[0]);
+    const table_keys = Object.keys(data_obj[0]);
 
     // Create header row
-    const headers = (!headers_array || Object.keys(headers_array) == 0) ? keys : headers_array;
+    const headers = (!headers_array || Object.keys(headers_array) == 0) ? table_keys : headers_array;
     const headerRow = document.createElement('tr');
     headers.forEach(header => {
         const th = document.createElement('th');
@@ -66,10 +74,25 @@ function createTable(data, headers_array = []) {
     });
     thead.appendChild(headerRow);
 
+    //Filters
+    if (filters) {
+        let tr = document.createElement("tr");
+        table_keys.forEach((key) => {
+            let td = document.createElement('td');
+            td.innerHTML = `
+                <select class = "form-control" id="filter-${key}" name="filter-${key}">
+                    <option class = "form-control" value="" selected>Selecionar...</option>
+                </select>
+            `;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    }
+
     // Create body rows
-    data.forEach(row => {
+    data_obj.forEach(row => {
         const tr = document.createElement('tr');
-        keys.forEach(key => {
+        table_keys.forEach(key => {
             const td = document.createElement('td');
             td.textContent = row[key];
             tr.appendChild(td);
