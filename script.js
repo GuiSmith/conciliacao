@@ -5,7 +5,7 @@ var real = new Intl.NumberFormat('pt-BR', {
 
 function parseOFX(ofxContent) {
     // Remover cabeçalhos desnecessários, caso existam, para converter em XML válido
-    const xmlContent = ofxContent.replace(/<\?OFX.*\?>/, '');
+    const xmlContent = ofxContent.replace(/^[^<].*$/gm, '').trim();
 
     // Parsear como XML usando DOMParser
     const parser = new DOMParser();
@@ -13,7 +13,8 @@ function parseOFX(ofxContent) {
 
     // Verificar por erros de parsing
     if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-        console.error("Erro ao parsear o OFX");
+        console.log(xmlDoc);
+        console.log("Erro ao parsear o OFX");
         return;
     }
     // Navegar pelos dados do XML
@@ -31,10 +32,10 @@ function parseOFX(ofxContent) {
     }
     console.log(transactionData);
     let table_container = document.getElementById('ofx-table');
-    table_container.appendChild(createTable(transactionData));
+    table_container.appendChild(createTable(transactionData,['ID','Tipo','Data','Valor','Descrição']));
 }
 
-function createTable(data, headers_obj = []) {
+function createTable(data, headers_array = []) {
     // Check if data is valid and not empty
     if (!data || data.length === 0) {
         console.error("No data provided or empty array.");
@@ -46,8 +47,11 @@ function createTable(data, headers_obj = []) {
     const thead = document.createElement('thead');
     const tbody = document.createElement('tbody');
 
+    //Keys
+    const keys = Object.keys(data[0]);
+
     // Create header row
-    const headers = (!headers_obj || Object.keys(headers_obj) == 0) ? Object.keys(data[0]) : headers_obj;
+    const headers = (!headers_array || Object.keys(headers_array) == 0) ? keys : headers_array;
     const headerRow = document.createElement('tr');
     headers.forEach(header => {
         const th = document.createElement('th');
@@ -59,13 +63,12 @@ function createTable(data, headers_obj = []) {
     // Create body rows
     data.forEach(row => {
         const tr = document.createElement('tr');
-        headers.forEach(header => {
+        keys.forEach(key => {
             const td = document.createElement('td');
-            td.textContent = row[header];
+            td.textContent = row[key];
             tr.appendChild(td);
         });
         tbody.appendChild(tr);
-        //04906933939
     });
 
     //Table headers class for bootstrap
