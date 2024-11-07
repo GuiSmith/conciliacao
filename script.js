@@ -1,7 +1,7 @@
 var real = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-})
+});
 
 var ofx_selected = false;
 
@@ -32,7 +32,7 @@ function parseOFX(ofxContent) {
             memo: transaction.getElementsByTagName('MEMO')[0]?.textContent || '',
         });
     }
-    console.log(transactionData);
+    //console.log(transactionData);
     let table_container = document.getElementById('ofx-table');
     let headers = ['ID', 'Tipo', 'Data', 'Valor', 'Descrição'];
     //Checks if a file is already selected and confirms the overwrite operation with the user
@@ -65,7 +65,7 @@ function createTable(data_obj, headers_array = [], filters = true) {
     const table_keys = Object.keys(data_obj[0]);
 
     // Create header row
-    const headers = (!headers_array || Object.keys(headers_array) == 0) ? table_keys : headers_array;
+    const headers = (!headers_array || headers_array.length == 0) ? table_keys : headers_array;
     const headerRow = document.createElement('tr');
     headers.forEach(header => {
         const th = document.createElement('th');
@@ -77,16 +77,35 @@ function createTable(data_obj, headers_array = [], filters = true) {
     //Filters
     if (filters) {
         let tr = document.createElement("tr");
+        tr.classList.add('filters-row');
         table_keys.forEach((key) => {
             let td = document.createElement('td');
-            td.innerHTML = `
-                <select class = "form-control" id="filter-${key}" name="filter-${key}">
-                    <option class = "form-control" value="" selected>Selecionar...</option>
-                </select>
-            `;
+            let unique_values = [...new Set(data_obj.map(item => item[key]))];
+
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.classList.add('form-control');
+            input.id = `input-filter-${key}`;
+            input.name = `input-filter-${key}`;
+            input.setAttribute('list',`filter-${key}`);
+            input.addEventListener('input', update_filters);
+            td.appendChild(input);
+
+            //Select
+            let datalist = document.createElement('datalist');
+            datalist.id = `filter-${key}`;
+            td.append(datalist);
+            
+            //Filter options
+            unique_values.forEach((option_value) => {
+                let option = document.createElement('option');
+                option.value = option_value;
+                option.textContent = option_value;
+                datalist.appendChild(option);
+            });
             tr.appendChild(td);
         });
-        tbody.appendChild(tr);
+        thead.appendChild(tr);
     }
 
     // Create body rows
@@ -95,6 +114,7 @@ function createTable(data_obj, headers_array = [], filters = true) {
         table_keys.forEach(key => {
             const td = document.createElement('td');
             td.textContent = row[key];
+            td.className = key;
             tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -113,6 +133,32 @@ function createTable(data_obj, headers_array = [], filters = true) {
     table.classList.add("table-striped");
 
     return table;
+}
+
+function update_filters(){
+    console.log(event.target);
+    let id_parts = event.target.id.split('-');
+    let obj = {
+        id: event.target.id,
+        filter: id_parts[id_parts.length-1],
+        value: event.target.value
+    }
+    console.log(obj);
+
+    let rows = Array.from(document.querySelectorAll(`table tbody tr`));
+    rows.forEach((row) => {
+        let cell = row.querySelector(`.${obj.filter}`);
+        //console.log(cell);
+        if (obj.value == "") {
+            row.style.display = 'table-row';
+        }else{
+            if (cell.textContent != obj.value) {
+                row.style.display = 'none';
+            }
+        }
+    });
+    //console.log(rows);
+    
 }
 
 function formatDate(dateString) {
